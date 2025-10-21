@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>ระบบตรวจสอบบัตรเจ้าหน้าที่ เขตพื้นที่การบิน</title>
+    <link rel="stylesheet" href="./style.css">
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบตรวจสอบบัตรเจ้าหน้าที่</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+            min-height: 100%;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(33, 150, 243, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
+        }
+        
+        .scanner-container {
+            border: 3px dashed #2196f3;
+            border-radius: 12px;
+            background: rgba(33, 150, 243, 0.05);
+        }
+        
+        .employee-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-left: 5px solid #2196f3;
+        }
+        
+        .activity-item {
+            border-left: 3px solid #4caf50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-full">
+    <div class="container mx-auto px-4 py-6 max-w-6xl">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-500 rounded-full mb-4">
+                <i class="fas fa-id-card text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">ระบบตรวจสอบบัตรเจ้าหน้าที่</h1>
+            <p class="text-gray-600">เขตพื้นที่การบิน</p>
+        </div>
+
+        <!-- Scanner Section -->
+        <div class="card rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-qrcode text-blue-500 mr-2"></i>
+                สแกนบาร์โค้ด
+            </h2>
+            
+            <div class="scanner-container p-6 text-center mb-4">
+                <div id="qr-reader" style="width: 100%; display: none;"></div>
+                <div id="scanner-placeholder" class="py-8">
+                    <i class="fas fa-camera text-blue-500 text-4xl mb-4"></i>
+                    <p class="text-gray-600 mb-4">กดปุ่มด้านล่างเพื่อเปิดกล้องสแกนบาร์โค้ด</p>
+                    <button id="start-scanner" class="btn-primary text-white px-6 py-3 rounded-lg font-medium">
+                        <i class="fas fa-camera mr-2"></i>เปิดกล้องสแกน
+                    </button>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <button id="stop-scanner" class="btn-secondary text-white px-4 py-2 rounded-lg font-medium" style="display: none;">
+                    <i class="fas fa-stop mr-2"></i>หยุดสแกน
+                </button>
+            </div>
+        </div>
+
+        <!-- Manual Search Section -->
+        <div class="card rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-search text-blue-500 mr-2"></i>
+                ค้นหาด้วยรหัสบัตร
+            </h2>
+            
+            <div class="flex gap-3">
+                <input type="text" id="employee-id" placeholder="กรอกรหัสบัตรเจ้าหน้าที่" 
+                       class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button id="search-btn" class="btn-primary text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-search mr-2"></i>ค้นหา
+                </button>
+            </div>
+        </div>
+
+        <!-- Employee Info Section -->
+        <div id="employee-info" class="card rounded-2xl p-6 mb-6" style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-user text-blue-500 mr-2"></i>
+                ข้อมูลเจ้าหน้าที่
+            </h2>
+            
+            <div class="employee-card rounded-lg p-6 mb-4">
+                <!-- 4 Column Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                    <!-- คอลัมน์ที่ 1: รูปภาพ -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white border-2 border-orange-200 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow">
+                            <h3 class="text-sm font-semibold text-white bg-orange-500 px-3 py-2 rounded-lg mb-3">รูปภาพเจ้าหน้าที่</h3>
+                            <img id="emp-photo" src="" alt="รูปภาพเจ้าหน้าที่" 
+                                 class="w-full max-w-xs mx-auto rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow" 
+                                 style="display: none; aspect-ratio: 3/4; object-fit: cover;"
+                                 onclick="openPhotoModal(this.src)">
+                            <div id="no-photo" class="py-8">
+                                <i class="fas fa-user-circle text-gray-400 text-6xl mb-2"></i>
+                                <p class="text-gray-500">ไม่มีรูปภาพ</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- คอลัมน์ที่ 2: ข้อมูลพื้นฐาน -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white border-2 border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                            <h3 class="text-sm font-semibold text-white bg-blue-500 px-3 py-2 rounded-lg mb-3">ข้อมูลพื้นฐาน</h3>
+                            <div class="space-y-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">รหัสบัตรเจ้าหน้าที่</p>
+                                    <p id="emp-id" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">ชื่อ-นามสกุล</p>
+                                    <p id="emp-name" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">หน่วยงาน</p>
+                                    <p id="emp-agency" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">แผนก</p>
+                                    <p id="emp-department" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">ตำแหน่ง</p>
+                                    <p id="emp-position" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- คอลัมน์ที่ 3: ข้อมูลบัตร -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white border-2 border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                            <h3 class="text-sm font-semibold text-white bg-green-500 px-3 py-2 rounded-lg mb-3">ข้อมูลบัตร</h3>
+                            <div class="space-y-4">
+                                <div class="bg-blue-50 rounded-lg p-3">
+                                    <p class="text-xs text-blue-600 mb-1">หน่วยงานที่ออกบัตร</p>
+                                    <p id="emp-issuing-agency" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-3">
+                                    <p class="text-xs text-blue-600 mb-1">ประเภทบัตร</p>
+                                    <p id="emp-card-type" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-3">
+                                    <p class="text-xs text-blue-600 mb-1">วันที่บัตรหมดอายุ</p>
+                                    <p id="emp-expiry-date" class="font-semibold text-base text-red-600">-</p>
+                                </div>
+                                <div class="bg-blue-50 rounded-lg p-3">
+                                    <p class="text-xs text-blue-600 mb-1">ข้อมูลบัตรเพิ่มเติม</p>
+                                    <p id="emp-additional-info" class="font-semibold text-base text-gray-800">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- คอลัมน์ที่ 4: หมายเลขพื้นที่และสถานะ -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white border-2 border-purple-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow h-full">
+                            <h3 class="text-sm font-semibold text-white bg-purple-500 px-3 py-2 rounded-lg mb-3">พื้นที่และสถานะ</h3>
+                            <div class="space-y-4">
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-500 mb-2">หมายเลขพื้นที่</p>
+                                    <p id="emp-area-number" class="font-bold text-8xl px-4 py-2 rounded-lg text-center bg-gray-500 text-white">-</p>
+                                </div>
+                                <div class="text-center">
+                                    <p class="text-xs text-gray-500 mb-2">สถานะบัตร</p>
+                                    <p id="emp-card-status" class="font-semibold text-sm px-3 py-2 rounded-full inline-block">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Remarks -->
+                <div class="bg-yellow-50 border-2 border-yellow-200 rounded-xl p-4 mb-4">
+                    <h3 class="text-sm font-semibold text-yellow-700 mb-2 flex items-center">
+                        <i class="fas fa-sticky-note mr-2"></i>หมายเหตุ
+                    </h3>
+                    <p id="emp-remarks" class="font-semibold text-base text-gray-800 bg-white rounded-lg p-3">-</p>
+                </div>
+                
+                <!-- PDF Request Button -->
+                <div class="mb-4">
+                    <button id="pdf-request-btn" class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium" style="display: none;">
+                        <i class="fas fa-file-pdf mr-2"></i>ดูคำขอทำบัตรอนุญาตฯ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Equipment Registration -->
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                    <i class="fas fa-tools text-blue-500 mr-2"></i>
+                    ลงทะเบียนอุปกรณ์ที่นำเข้า เขตพื้นที่การบิน
+                    <span class="text-red-500 ml-1">*</span>
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="flex flex-col space-y-2">
+                        <label class="flex items-center">
+                            <input type="radio" name="equipment-option" value="no-equipment" class="mr-2" checked>
+                            <span class="text-gray-700">ไม่มีอุปกรณ์ที่นำเข้า</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="equipment-option" value="register-equipment" class="mr-2">
+                            <span class="text-gray-700">ลงทะเบียนอุปกรณ์</span>
+                        </label>
+                    </div>
+                    
+                    <div id="equipment-form" class="space-y-4" style="display: none;">
+                        <div class="bg-white rounded-lg p-4 border">
+                            <h4 class="font-medium text-gray-800 mb-3">รายการอุปกรณ์</h4>
+                            <div id="equipment-list" class="space-y-3">
+                                <div class="equipment-item flex gap-3 items-end">
+                                    <div class="flex-1">
+                                        <label class="block text-sm text-gray-600 mb-1">รายการอุปกรณ์</label>
+                                        <input type="text" class="equipment-name w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ระบุชื่ออุปกรณ์">
+                                    </div>
+                                    <div class="w-24">
+                                        <label class="block text-sm text-gray-600 mb-1">จำนวน</label>
+                                        <input type="number" class="equipment-quantity w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="1" min="1">
+                                    </div>
+                                    <button type="button" class="remove-equipment bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg" style="display: none;">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="button" id="add-equipment" class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium">
+                                <i class="fas fa-plus mr-2"></i>เพิ่มรายการอุปกรณ์
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Current Date Time -->
+            <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-center">
+                    <i class="fas fa-clock text-blue-500 mr-2"></i>
+                    <span id="current-datetime" class="text-lg font-medium text-gray-800"></span>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button id="check-in-btn" class="btn-success text-white py-3 rounded-lg font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i>ยืนยันเวลาเข้า
+                </button>
+                <button id="check-out-btn" class="btn-danger text-white py-3 rounded-lg font-medium">
+                    <i class="fas fa-sign-out-alt mr-2"></i>ยืนยันเวลาออก
+                </button>
+                <button id="cancel-btn" class="btn-secondary text-white py-3 rounded-lg font-medium">
+                    <i class="fas fa-times mr-2"></i>ยกเลิก
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent Activities -->
+        <div class="card rounded-2xl p-6">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
+                <i class="fas fa-history text-blue-500 mr-2"></i>
+                กิจกรรมล่าสุด
+            </h2>
+            
+            <div id="recent-activities" class="space-y-3">
+                <div class="text-center text-gray-500 py-8">
+                    <i class="fas fa-clipboard-list text-4xl mb-2"></i>
+                    <p>ยังไม่มีกิจกรรม</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Photo Modal -->
+    <div id="photo-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50" style="display: none;" onclick="closePhotoModal()">
+        <div class="relative max-w-4xl max-h-full p-4">
+            <img id="modal-photo" src="" alt="รูปภาพเจ้าหน้าที่" class="max-w-full max-h-full rounded-lg shadow-2xl">
+            <button onclick="closePhotoModal()" class="absolute top-2 right-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white rounded-full w-10 h-10 flex items-center justify-center text-xl font-bold transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let html5QrcodeScanner = null;
+        let lastScanTime = 0;
+        let currentEmployeeData = null;
+        
+        // Photo modal functions
+        function openPhotoModal(imageSrc) {
+            if (imageSrc && imageSrc.trim() !== '') {
+                document.getElementById('modal-photo').src = imageSrc;
+                document.getElementById('photo-modal').style.display = 'flex';
+                document.body.style.overflow = 'hidden'; // Prevent background scrolling
+            }
+        }
+        
+        function closePhotoModal() {
+            document.getElementById('photo-modal').style.display = 'none';
+            document.body.style.overflow = 'auto'; // Restore scrolling
+        }
+        
+        // Close modal when clicking outside the image
+        document.getElementById('photo-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closePhotoModal();
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closePhotoModal();
+            }
+        });
+        
+        // Update current date time
+        function updateDateTime() {
+            const now = new Date();
+            const options = {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Asia/Bangkok'
+            };
+            document.getElementById('current-datetime').textContent = 
+                now.toLocaleDateString('th-TH', options);
+        }
+        
+        // Check card status
+        function getCardStatus(expiryDateStr) {
+            if (!expiryDateStr || expiryDateStr === '-') {
+                return { status: 'ไม่ระบุ', color: 'bg-gray-500 text-white', isExpired: false };
+            }
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Parse expiry date (assuming format DD/MM/YYYY or YYYY-MM-DD)
+            let expiryDate;
+            if (expiryDateStr.includes('/')) {
+                const parts = expiryDateStr.split('/');
+                expiryDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            } else if (expiryDateStr.includes('-')) {
+                expiryDate = new Date(expiryDateStr);
+            } else {
+                return { status: 'รูปแบบวันที่ไม่ถูกต้อง', color: 'bg-gray-500 text-white', isExpired: false };
+            }
+            
+            // Check if card is expired (expiry date < today)
+            if (expiryDate < today) {
+                return { status: 'หมดอายุ', color: 'bg-red-500 text-white', isExpired: true };
+            }
+            
+            const timeDiff = expiryDate.getTime() - today.getTime();
+            const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
+            
+            if (daysDiff <= 30) {
+                return { status: 'ใกล้หมดอายุ', color: 'bg-yellow-500 text-white', isExpired: false };
+            } else {
+                return { status: 'พร้อมใช้งาน', color: 'bg-green-500 text-white', isExpired: false };
+            }
+        }
+        
+        // Equipment management
+        function toggleEquipmentForm() {
+            const equipmentForm = document.getElementById('equipment-form');
+            const registerRadio = document.querySelector('input[name="equipment-option"][value="register-equipment"]');
+            
+            if (registerRadio.checked) {
+                equipmentForm.style.display = 'block';
+            } else {
+                equipmentForm.style.display = 'none';
+            }
+        }
+        
+        function addEquipmentItem() {
+            const equipmentList = document.getElementById('equipment-list');
+            const newItem = document.createElement('div');
+            newItem.className = 'equipment-item flex gap-3 items-end';
+            newItem.innerHTML = `
+                <div class="flex-1">
+                    <label class="block text-sm text-gray-600 mb-1">รายการอุปกรณ์</label>
+                    <input type="text" class="equipment-name w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ระบุชื่ออุปกรณ์">
+                </div>
+                <div class="w-24">
+                    <label class="block text-sm text-gray-600 mb-1">จำนวน</label>
+                    <input type="number" class="equipment-quantity w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="1" min="1">
+                </div>
+                <button type="button" class="remove-equipment bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            
+            equipmentList.appendChild(newItem);
+            updateRemoveButtons();
+        }
+        
+        function updateRemoveButtons() {
+            const items = document.querySelectorAll('.equipment-item');
+            items.forEach((item, index) => {
+                const removeBtn = item.querySelector('.remove-equipment');
+                if (items.length > 1) {
+                    removeBtn.style.display = 'block';
+                } else {
+                    removeBtn.style.display = 'none';
+                }
+            });
+        }
+        
+        function getEquipmentData() {
+            const equipmentOption = document.querySelector('input[name="equipment-option"]:checked').value;
+            
+            if (equipmentOption === 'no-equipment') {
+                return { hasEquipment: false, equipment: [] };
+            }
+            
+            const equipmentItems = [];
+            const items = document.querySelectorAll('.equipment-item');
+            
+            items.forEach(item => {
+                const name = item.querySelector('.equipment-name').value.trim();
+                const quantity = item.querySelector('.equipment-quantity').value;
+                
+                if (name && quantity) {
+                    equipmentItems.push({
+                        name: name,
+                        quantity: parseInt(quantity)
+                    });
+                }
+            });
+            
+            return { hasEquipment: true, equipment: equipmentItems };
+        }
+        
+        // Start scanner
+        document.getElementById('start-scanner').addEventListener('click', function() {
+            // Prevent multiple scanner instances
+            if (html5QrcodeScanner) {
+                return;
+            }
+            
+            const qrReader = document.getElementById('qr-reader');
+            const placeholder = document.getElementById('scanner-placeholder');
+            const stopBtn = document.getElementById('stop-scanner');
+            const startBtn = this;
+            
+            startBtn.disabled = true;
+            qrReader.style.display = 'block';
+            placeholder.style.display = 'none';
+            stopBtn.style.display = 'inline-block';
+            
+            html5QrcodeScanner = new Html5Qrcode("qr-reader");
+            
+            html5QrcodeScanner.start(
+                { facingMode: "environment" },
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 }
+                },
+                (decodedText, decodedResult) => {
+                    const currentTime = Date.now();
+                    if (currentTime - lastScanTime < 10000) {
+                        return; // Prevent scanning within 10 seconds
+                    }
+                    lastScanTime = currentTime;
+                    
+                    document.getElementById('employee-id').value = decodedText;
+                    searchEmployee(decodedText);
+                    stopScanner();
+                },
+                (errorMessage) => {
+                    // Handle scan error silently
+                }
+            ).catch(err => {
+                console.error('Error starting scanner:', err);
+                html5QrcodeScanner = null;
+                resetScannerUI();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่สามารถเปิดกล้องได้',
+                    text: 'กรุณาตรวจสอบการอนุญาตใช้กล้อง'
+                });
+            });
+        });
+        
+        // Stop scanner
+        function stopScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner.clear();
+                    html5QrcodeScanner = null;
+                    resetScannerUI();
+                }).catch(err => {
+                    console.error('Error stopping scanner:', err);
+                    // Force reset UI even if stop fails
+                    html5QrcodeScanner = null;
+                    resetScannerUI();
+                });
+            } else {
+                resetScannerUI();
+            }
+        }
+        
+        // Reset scanner UI
+        function resetScannerUI() {
+            const qrReader = document.getElementById('qr-reader');
+            const placeholder = document.getElementById('scanner-placeholder');
+            const stopBtn = document.getElementById('stop-scanner');
+            const startBtn = document.getElementById('start-scanner');
+            
+            qrReader.style.display = 'none';
+            qrReader.innerHTML = ''; // Clear any remaining content
+            placeholder.style.display = 'block';
+            stopBtn.style.display = 'none';
+            startBtn.disabled = false;
+        }
+        
+        document.getElementById('stop-scanner').addEventListener('click', stopScanner);
+        
+        // Search employee
+        async function searchEmployee(employeeId) {
+            if (!employeeId.trim()) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณากรอกรหัสบัตร',
+                    text: 'กรุณากรอกรหัสบัตรเจ้าหน้าที่'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'กำลังค้นหา...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const response = await fetch(`https://script.google.com/macros/s/AKfycbxamvNlfZLhdZS5-ueqKtN_DGkf7Mrtrk6A9BKAvxlFK4jondmIzLDobbk7RA669k3dZA/exec?id=${encodeURIComponent(employeeId)}`);
+                const data = await response.json();
+                
+                Swal.close();
+                
+                if (data.success && data.employee) {
+                    currentEmployeeData = data.employee;
+                    displayEmployeeInfo(data.employee);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'ไม่พบข้อมูล',
+                        text: 'ไม่พบข้อมูลเจ้าหน้าที่ที่มีรหัสบัตรนี้'
+                    });
+                }
+            } catch (error) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับระบบได้'
+                });
+            }
+        }
+        
+        // Format expiry date to DD/MM/YYYY
+        function formatExpiryDate(dateStr) {
+            if (!dateStr || dateStr === '-') return '-';
+            
+            try {
+                let date;
+                if (dateStr.includes('/')) {
+                    // Already in DD/MM/YYYY format
+                    const parts = dateStr.split('/');
+                    if (parts.length === 3) {
+                        // Validate and reformat
+                        date = new Date(parts[2], parts[1] - 1, parts[0]);
+                        if (!isNaN(date.getTime())) {
+                            return `${parts[0].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[2]}`;
+                        }
+                    }
+                } else if (dateStr.includes('-')) {
+                    // Convert from YYYY-MM-DD to DD/MM/YYYY
+                    date = new Date(dateStr);
+                    if (!isNaN(date.getTime())) {
+                        const day = date.getDate().toString().padStart(2, '0');
+                        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                        const year = date.getFullYear();
+                        return `${day}/${month}/${year}`;
+                    }
+                }
+                return dateStr; // Return original if can't parse
+            } catch (error) {
+                return dateStr; // Return original if error
+            }
+        }
+        
+        // Get area number background color based on card type
+        function getAreaNumberStyle(cardType) {
+            const areaNumber = document.getElementById('emp-area-number').textContent;
+            if (!areaNumber || areaNumber === '-') {
+                return 'bg-gray-500 text-white';
+            }
+            
+            if (cardType === 'บัตรถาวร') {
+                return 'bg-blue-600 text-white';
+            } else if (cardType === 'บัตรชั่วคราว') {
+                return 'bg-orange-600 text-white';
+            } else {
+                return 'bg-red-600 text-white';
+            }
+        }
+
+        // Display employee info
+        function displayEmployeeInfo(employee) {
+            document.getElementById('emp-id').textContent = employee.id || '-';
+            document.getElementById('emp-name').textContent = employee.name || '-';
+            document.getElementById('emp-agency').textContent = employee.agency || '-';
+            document.getElementById('emp-department').textContent = employee.department || '-';
+            document.getElementById('emp-position').textContent = employee.position || '-';
+            document.getElementById('emp-area-number').textContent = employee.areaNumber || '-';
+            
+            // Format and display expiry date
+            const formattedExpiryDate = formatExpiryDate(employee.expiryDate);
+            document.getElementById('emp-expiry-date').textContent = formattedExpiryDate;
+            
+            document.getElementById('emp-card-type').textContent = employee.cardType || '-';
+            document.getElementById('emp-issuing-agency').textContent = employee.issuingAgency || '-';
+            document.getElementById('emp-additional-info').textContent = employee.additionalInfo || '-';
+            document.getElementById('emp-remarks').textContent = employee.remarks || '-';
+            
+            // Style area number based on card type
+            const areaNumberElement = document.getElementById('emp-area-number');
+            const areaNumberStyle = getAreaNumberStyle(employee.cardType);
+            areaNumberElement.className = `font-bold text-8xl px-4 py-2 rounded-lg text-center ${areaNumberStyle}`;
+            
+            // Set card status
+            const cardStatus = getCardStatus(employee.expiryDate);
+            const statusElement = document.getElementById('emp-card-status');
+            statusElement.textContent = cardStatus.status;
+            statusElement.className = `font-semibold text-lg px-3 py-1 rounded-full inline-block ${cardStatus.color}`;
+            
+            // Disable buttons if card is expired
+            const checkInBtn = document.getElementById('check-in-btn');
+            const checkOutBtn = document.getElementById('check-out-btn');
+            
+            if (cardStatus.isExpired) {
+                checkInBtn.disabled = true;
+                checkOutBtn.disabled = true;
+                checkInBtn.classList.remove('btn-success');
+                checkOutBtn.classList.remove('btn-danger');
+                checkInBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                checkOutBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
+            } else {
+                checkInBtn.disabled = false;
+                checkOutBtn.disabled = false;
+                checkInBtn.classList.add('btn-success');
+                checkOutBtn.classList.add('btn-danger');
+                checkInBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                checkOutBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            }
+            
+            // Handle photo
+            const photoElement = document.getElementById('emp-photo');
+            const noPhotoElement = document.getElementById('no-photo');
+            
+            if (employee.photo && employee.photo.trim() !== '') {
+                photoElement.src = employee.photo;
+                photoElement.style.display = 'block';
+                noPhotoElement.style.display = 'none';
+                
+                photoElement.onerror = function() {
+                    this.style.display = 'none';
+                    noPhotoElement.style.display = 'block';
+                };
+            } else {
+                photoElement.style.display = 'none';
+                noPhotoElement.style.display = 'block';
+            }
+            
+            // Handle PDF request button
+            const pdfBtn = document.getElementById('pdf-request-btn');
+            if (employee.pdfRequest && employee.pdfRequest.trim() !== '') {
+                pdfBtn.style.display = 'inline-block';
+                pdfBtn.onclick = function() {
+                    window.open(employee.pdfRequest, '_blank', 'noopener,noreferrer');
+                };
+            } else {
+                pdfBtn.style.display = 'none';
+            }
+            
+            document.getElementById('employee-info').style.display = 'block';
+            document.getElementById('employee-info').classList.add('fade-in');
+        }
+        
+        // Record attendance
+        async function recordAttendance(type) {
+            if (!currentEmployeeData) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่พบข้อมูลเจ้าหน้าที่',
+                    text: 'กรุณาค้นหาข้อมูลเจ้าหน้าที่ก่อน'
+                });
+                return;
+            }
+            
+            // Validate equipment registration
+            const equipmentOption = document.querySelector('input[name="equipment-option"]:checked');
+            if (!equipmentOption) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณาเลือกตัวเลือกอุปกรณ์',
+                    text: 'กรุณาเลือกว่ามีอุปกรณ์ที่นำเข้าหรือไม่'
+                });
+                return;
+            }
+            
+            const equipmentData = getEquipmentData();
+            if (equipmentData.hasEquipment && equipmentData.equipment.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณากรอกข้อมูลอุปกรณ์',
+                    text: 'กรุณากรอกรายการอุปกรณ์และจำนวน'
+                });
+                return;
+            }
+            
+            Swal.fire({
+                title: 'กำลังบันทึก...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            const attendanceData = {
+                ...currentEmployeeData,
+                type: type,
+                timestamp: new Date().toISOString(),
+                equipment: equipmentData
+            };
+            
+            try {
+                const response = await fetch('https://script.google.com/macros/s/AKfycbyCLLso9yMk71Khxuz3WHLUkmtH1ALVxZwCzj10XuEKuNBCUaQAuCQ47gzgXSxmpR1TvQ/exec', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(attendanceData)
+                });
+                
+                const result = await response.json();
+                
+                Swal.close();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกสำเร็จ',
+                        text: `บันทึก${type === 'check-in' ? 'เวลาเข้า' : 'เวลาออก'}เรียบร้อยแล้ว`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                    addRecentActivity(currentEmployeeData, type, equipmentData);
+                    clearForm();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'ไม่สามารถบันทึกข้อมูลได้'
+                    });
+                }
+            } catch (error) {
+                Swal.close();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับระบบได้'
+                });
+            }
+        }
+        
+        // Add recent activity
+        function addRecentActivity(employee, type, equipmentData) {
+            const activitiesContainer = document.getElementById('recent-activities');
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('th-TH');
+            
+            // Remove placeholder if exists
+            if (activitiesContainer.querySelector('.text-center')) {
+                activitiesContainer.innerHTML = '';
+            }
+            
+            let equipmentText = '';
+            if (equipmentData.hasEquipment && equipmentData.equipment.length > 0) {
+                equipmentText = ` - อุปกรณ์: ${equipmentData.equipment.map(eq => `${eq.name} (${eq.quantity})`).join(', ')}`;
+            }
+            
+            const activityItem = document.createElement('div');
+            activityItem.className = 'activity-item rounded-lg p-4 fade-in';
+            activityItem.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-semibold text-gray-800">${employee.name}</p>
+                        <p class="text-sm text-gray-600">${employee.id} - ${employee.position}${equipmentText}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-medium ${type === 'check-in' ? 'text-green-600' : 'text-red-600'}">
+                            ${type === 'check-in' ? 'เข้างาน' : 'ออกงาน'}
+                        </p>
+                        <p class="text-sm text-gray-600">${timeString}</p>
+                    </div>
+                </div>
+            `;
+            
+            activitiesContainer.insertBefore(activityItem, activitiesContainer.firstChild);
+            
+            // Keep only last 5 activities
+            const activities = activitiesContainer.querySelectorAll('.activity-item');
+            if (activities.length > 5) {
+                activities[activities.length - 1].remove();
+            }
+        }
+        
+        // Clear form
+        function clearForm() {
+            document.getElementById('employee-id').value = '';
+            document.getElementById('employee-info').style.display = 'none';
+            currentEmployeeData = null;
+            
+            // Reset equipment form
+            document.querySelector('input[name="equipment-option"][value="no-equipment"]').checked = true;
+            document.getElementById('equipment-form').style.display = 'none';
+            
+            // Reset equipment list
+            const equipmentList = document.getElementById('equipment-list');
+            equipmentList.innerHTML = `
+                <div class="equipment-item flex gap-3 items-end">
+                    <div class="flex-1">
+                        <label class="block text-sm text-gray-600 mb-1">รายการอุปกรณ์</label>
+                        <input type="text" class="equipment-name w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ระบุชื่ออุปกรณ์">
+                    </div>
+                    <div class="w-24">
+                        <label class="block text-sm text-gray-600 mb-1">จำนวน</label>
+                        <input type="number" class="equipment-quantity w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="1" min="1">
+                    </div>
+                    <button type="button" class="remove-equipment bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded-lg" style="display: none;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Event listeners
+        document.getElementById('search-btn').addEventListener('click', function() {
+            const employeeId = document.getElementById('employee-id').value;
+            searchEmployee(employeeId);
+            // Reset search field after search
+            document.getElementById('employee-id').value = '';
+        });
+        
+        document.getElementById('employee-id').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const employeeId = this.value;
+                searchEmployee(employeeId);
+                // Reset search field after search
+                this.value = '';
+            }
+        });
+        
+        document.getElementById('check-in-btn').addEventListener('click', function() {
+            recordAttendance('check-in');
+        });
+        
+        document.getElementById('check-out-btn').addEventListener('click', function() {
+            recordAttendance('check-out');
+        });
+        
+        document.getElementById('cancel-btn').addEventListener('click', clearForm);
+        
+        // Equipment form event listeners
+        document.querySelectorAll('input[name="equipment-option"]').forEach(radio => {
+            radio.addEventListener('change', toggleEquipmentForm);
+        });
+        
+        document.getElementById('add-equipment').addEventListener('click', addEquipmentItem);
+        
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('remove-equipment') || e.target.parentElement.classList.contains('remove-equipment')) {
+                const item = e.target.closest('.equipment-item');
+                item.remove();
+                updateRemoveButtons();
+            }
+        });
+        
+        // Initialize
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        updateRemoveButtons();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'98f6cf5501d7731c',t:'MTc2MDYwOTg4Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+    <script  src="./script.js"></script>
+
+  </body>
+  
+</html>
